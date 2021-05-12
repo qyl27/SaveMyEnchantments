@@ -1,0 +1,11 @@
+name: SaveMyEnchantments
+version: @version@
+main: cx.rain.mc.savemyenchantments.SaveMyEnchantments
+api-version: 1.14
+prefix: SaveMyEnchantments
+authors: [ QiuYuLuo ]
+description: Save enchantments from using Grindstone.
+website: https://github.com/AmemiyaSigure/SaveMyEnchantments
+permissions:
+  savemyenchantments.use:
+    default: true
