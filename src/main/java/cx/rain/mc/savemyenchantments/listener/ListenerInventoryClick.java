@@ -35,8 +35,13 @@ public class ListenerInventoryClick implements Listener {
 
         ItemStack cursor = event.getCursor();
         if (cursor != null) {
+
+            System.out.println("2");
             if (cursor.getType() == Material.BOOK) {
+                System.out.println("3");
+
                 if (event.getRawSlot() == 1) {
+                    System.out.println(event.getRawSlot());
                     event.setCancelled(true);
 
                     event.setCurrentItem(cursor);

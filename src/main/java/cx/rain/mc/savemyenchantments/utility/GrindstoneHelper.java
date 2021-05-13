@@ -25,7 +25,7 @@ public class GrindstoneHelper {
     public static Tuple<ItemStack, ItemStack> disenchant(ItemStack stack) {
         if (canDisenchant(stack)) {
             NBTItem nbt = new NBTItem(stack);
-            NBTCompound tag = nbt.getCompound("tag");
+            NBTCompound tag = nbt.getOrCreateCompound("tag");
             NBTCompoundList enchantments = tag.getCompoundList("Enchantments");
 
             int size = enchantments.size();
