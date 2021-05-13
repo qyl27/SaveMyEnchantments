@@ -2,6 +2,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id 'java'
+    id "com.github.johnrengelman.shadow" version "5.2.0"
 }
 
 group = 'cx.rain.mc'
@@ -24,12 +25,17 @@ repositories {
         name = 'Qore'
         url = 'https://jitpack.io'
     }
+    maven {
+        name = 'Codemc repo'
+        url = 'https://repo.codemc.org/repository/maven-public/'
+    }
 }
 
 dependencies {
     compileOnly 'org.spigotmc:spigot-api:1.14-R0.1-SNAPSHOT'
 
     //implementation 'com.github.AmemiyaSigure:Qore:eb4179db38'
+    implementation 'de.tr7zw:item-nbt-api:2.7.1'
 }
 
 processResources {
@@ -37,3 +43,5 @@ processResources {
         filter ReplaceTokens, tokens: [version: version]
     }
 }
+
+jar.finalizedBy(shadowJar)
