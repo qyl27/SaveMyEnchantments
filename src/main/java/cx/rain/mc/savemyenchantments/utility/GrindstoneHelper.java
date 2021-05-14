@@ -1,6 +1,6 @@
 package cx.rain.mc.savemyenchantments.utility;
 
-import de.tr7zw.changeme.nbtapi.*;
+import de.tr7zw.nbtapi.*;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
@@ -39,8 +39,9 @@ public class GrindstoneHelper {
                     Enchantment.getByKey(new NamespacedKey(key[0], key[1])), lvl));
 
             enchantments.remove(size - 1);
+            if ()
+            tag.setInteger("RepairCost", 0);
             tag.setObject("Enchantments", enchantments);
-            nbt.setObject("tag", tag);
             ItemStack item = nbt.getItem();
 
             return new Tuple<>(item, book);
@@ -85,7 +86,9 @@ public class GrindstoneHelper {
             Tuple<ItemStack, ItemStack> stackTuple = disenchant(up);
 
             if (stackTuple != null) {
+                inventory.setItem(0, null);
                 inventory.setItem(1, stackTuple.right);
+                inventory.setItem(2, null);
                 return stackTuple.left;
             }
         }
