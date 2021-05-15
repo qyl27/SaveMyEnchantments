@@ -1,6 +1,7 @@
 package cx.rain.mc.savemyenchantments.listener;
 
 import cx.rain.mc.savemyenchantments.utility.GrindstoneHelper;
+import cx.rain.mc.savemyenchantments.utility.Tuple;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -18,78 +19,56 @@ public class ListenerInventoryClick implements Listener {
         if (inv == null) {
             return;
         }
-
         if (event.getView().getType() != InventoryType.GRINDSTONE) {
             return;
         }
 
-        if (event.isShiftClick()) {
+        GrindstoneInventory grindstone = (GrindstoneInventory) event.getView().getTopInventory();
+
+        if (event.isShiftClick()) { // On Shift clicked.
+            // Whether player clicked their inventory or clicked grind stone inventory.
             if (event.getClickedInventory().getType() == InventoryType.PLAYER) {
-                Inventory grindstone = event.getView().getTopInventory();
-                grindstone.setItem(2, event.getCurrentItem());
+                ItemStack current = event.getCurrentItem();
+                if (current != null) {
+                    if (current.getType() == Material.BOOK) {
+                        current.setAmount(current.getAmount() - 1);
+                        ItemStack currentCopy = current.clone();
+                        currentCopy.setAmount(1);
+                        grindstone.setItem(1, currentCopy);
+
+                        event.setCancelled(true);
+                    }
+                }
             } else {
-                event.getClickedInventory().setItem(1, null);
-                event.getWhoClicked().getInventory().addItem(event.getCurrentItem());
-            }
-            event.setCurrentItem(null);
+                int rawSlot = event.getRawSlot();
+                if (rawSlot == 1) {
+                    event.getWhoClicked().getInventory().addItem(event.getCurrentItem());
+                    event.getClickedInventory().setItem(rawSlot, null);
 
-            GrindstoneHelper.update((GrindstoneInventory) event.getView().getTopInventory());
-            return;
-        }
-
-        if (event.isLeftClick()) {
-            if (event.getClickedInventory().getType() == InventoryType.GRINDSTONE) {
-                ItemStack cursor = event.getCursor();
-                if (cursor != null) {
-                    if (cursor.getType() == Material.BOOK) {
-                        if (event.getRawSlot() == 1) {
-                            event.setCancelled(true);
-
-                            event.setCurrentItem(cursor);
-                            event.setCursor(null);
-                        }
-                    }
+                    event.setCancelled(true);
                 }
             }
-
-            GrindstoneHelper.update((GrindstoneInventory) event.getView().getTopInventory());
-            return;
-        }
-
-        if (event.isRightClick()) {
+        } else if (event.isLeftClick() || event.isRightClick()) {  // On left or right clicked.
             if (event.getClickedInventory().getType() == InventoryType.GRINDSTONE) {
-                ItemStack cursor = event.getCursor();
-                if (cursor == null) {
-                    if (event.getRawSlot() == 1) {
-                        ItemStack stack = event.getClickedInventory().getItem(1);
-                        if (stack != null && stack.getAmount() > 0) {
-                            stack.setAmount(stack.getAmount() / 2);
-                            event.setCurrentItem(stack);
-
-                            ItemStack stack1 = stack.clone();
-                            stack1.setAmount(stack.getAmount() - stack.getAmount() / 2);
-                            event.setCursor(stack1);
-                        }
-                    }
-                } else {
-                    if (cursor.getType() == Material.BOOK) {
-                        if (event.getRawSlot() == 1) {
+                int rawSlot = event.getRawSlot();
+                if (rawSlot == 1) {
+                    ItemStack cursor = event.getCursor();
+                    if (cursor != null) {
+                        if (cursor.getType() == Material.BOOK) {
+                            ItemStack cursorCopy = cursor.clone();
+                            cursorCopy.setAmount(1);
                             cursor.setAmount(cursor.getAmount() - 1);
-                            ItemStack stack = event.getCurrentItem();
-                            if (stack != null) {
-                                stack.setAmount(stack.getAmount() + 1);
-                            } else {
-                                stack = new ItemStack(Material.BOOK);
-                            }
-                            event.setCurrentItem(stack);
+                            event.setCurrentItem(cursorCopy);
+                            event.setCursor(cursor);
+
+                            event.setCancelled(true);
                         }
                     }
                 }
-
-                GrindstoneHelper.update((GrindstoneInventory) event.getView().getTopInventory());
-                event.setCancelled(true);
             }
         }
+
+        GrindstoneHelper.update(grindstone);
     }
 
     @EventHandler
@@ -99,7 +78,7 @@ public class ListenerInventoryClick implements Listener {
         if (inv == null) {
             return;
         }
-        
+
         if (event.getView().getType() != InventoryType.GRINDSTONE) {
             return;
         }
@@ -116,15 +95,27 @@ public class ListenerInventoryClick implements Listener {
 
         GrindstoneInventory grindstone = (GrindstoneInventory) inv;
         if (event.getRawSlot() == 2) {
-            if (GrindstoneHelper.canDisenchant(event.getCurrentItem())) {
-                ItemStack result = GrindstoneHelper.doDisenchantment(grindstone);
+            if (event.getCurrentItem() != null) {
+                if (grindstone.getItem(0) != null) {
+                    if (GrindstoneHelper.canDisenchant(grindstone.getItem(0))) {
+                        Tuple<ItemStack, ItemStack> result = GrindstoneHelper.doDisenchantment(grindstone);
 
-                if (event.isShiftClick()) {
-                    event.getWhoClicked().getInventory().addItem(result);
-                } else if (event.isLeftClick()) {
-                    event.setCursor(result);
-                } else if (event.isRightClick()) {
-                    event.setCursor(result);
+                        if (result != null) {
+                            if (event.isShiftClick()) {
+                                event.getWhoClicked().getInventory().addItem(result.left);
+                            } else if (event.isLeftClick()) {
+                                event.setCursor(result.left);
+                            } else if (event.isRightClick()) {
+                                event.setCursor(result.left);
+                            }
+
+                            grindstone.setItem(0, null);
+                            grindstone.setItem(1, result.right);
+                            grindstone.setItem(2, null);
+
+                            event.setCancelled(true);
+                        }
+                    }
                 }
             }
         }

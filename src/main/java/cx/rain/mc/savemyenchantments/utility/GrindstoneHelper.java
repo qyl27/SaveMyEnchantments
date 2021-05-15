@@ -1,8 +1,10 @@
 package cx.rain.mc.savemyenchantments.utility;
 
-import de.tr7zw.nbtapi.*;
+import net.minecraft.server.v1_16_R3.NBTTagCompound;
+import net.minecraft.server.v1_16_R3.NBTTagList;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.craftbukkit.v1_16_R3.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.GrindstoneInventory;
 import org.bukkit.inventory.ItemStack;
@@ -13,36 +15,42 @@ public class GrindstoneHelper {
         return !stack.getEnchantments().isEmpty();
     }
 
-    public static ItemStack getEnchantBook(Tuple<Enchantment, Integer> enchantment) {
+    public static ItemStack getEnchantBook(Enchantment enchantment, int lvl) {
         ItemStack stack = new ItemStack(Material.ENCHANTED_BOOK);
         EnchantmentStorageMeta meta = (EnchantmentStorageMeta) stack.getItemMeta();
         assert meta != null;
-        meta.addStoredEnchant(enchantment.left, enchantment.right, true);
+        meta.addStoredEnchant(enchantment, lvl, true);
         stack.setItemMeta(meta);
         return stack;
     }
 
     public static Tuple<ItemStack, ItemStack> disenchant(ItemStack stack) {
         if (canDisenchant(stack)) {
-            NBTItem nbt = new NBTItem(stack);
-            NBTCompound tag = nbt.getOrCreateCompound("tag");
-            NBTCompoundList enchantments = tag.getCompoundList("Enchantments");
+            net.minecraft.server.v1_16_R3.ItemStack stackNms = CraftItemStack.asNMSCopy(stack);
+            NBTTagCompound nbt = stackNms.getTag();
+            NBTTagList enchantments = nbt.getList("Enchantments", 10);
 
             int size = enchantments.size();
             assert !enchantments.isEmpty();
 
-            NBTListCompound enchantment = enchantments.get(size - 1);
+            NBTTagCompound enchantment = enchantments.getCompound(size - 1);
             String id = enchantment.getString("id");
-            String[] key = id.split(":");
-            int lvl = enchantment.getInteger("lvl");
-            ItemStack book = getEnchantBook(new Tuple<>(
-                    Enchantment.getByKey(new NamespacedKey(key[0], key[1])), lvl));
+            String[] keys = id.split(":");
+            int lvl = enchantment.getInt("lvl");
 
+            ItemStack book = getEnchantBook(Enchantment.getByKey(new NamespacedKey(keys[0], keys[1])), lvl);
             enchantments.remove(size - 1);
-            if ()
-            tag.setInteger("RepairCost", 0);
-            tag.setObject("Enchantments", enchantments);
-            ItemStack item = nbt.getItem();
+
+            if (enchantments.size() > 0) {
+                nbt.setInt("RepairCost", nbt.getInt("RepairCost") - 1);
+                nbt.set("Enchantments", enchantments);
+            } else {
+                nbt.remove("RepairCost");
+                nbt.remove("Enchantments");
+            }
+            stackNms.setTag(nbt);
+
+            ItemStack item = CraftItemStack.asBukkitCopy(stackNms);
 
             return new Tuple<>(item, book);
         } else {
@@ -73,7 +81,7 @@ public class GrindstoneHelper {
         }
     }
 
-    public static ItemStack doDisenchantment(GrindstoneInventory inventory) {
+    public static Tuple<ItemStack, ItemStack> doDisenchantment(GrindstoneInventory inventory) {
         ItemStack up = inventory.getItem(0);
         ItemStack down = inventory.getItem(1);
 
@@ -83,14 +91,7 @@ public class GrindstoneHelper {
         }
 
         if (canDisenchant(up)) {
-            Tuple<ItemStack, ItemStack> stackTuple = disenchant(up);
-
-            if (stackTuple != null) {
-                inventory.setItem(0, null);
-                inventory.setItem(1, stackTuple.right);
-                inventory.setItem(2, null);
-                return stackTuple.left;
-            }
+            return disenchant(up);
         }
 
         return null;
